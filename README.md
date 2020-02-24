@@ -1,7 +1,7 @@
 # SlackLunchBot
 Prints food from some restaurants
 
-yes the floor is floor
+yes the floor is made out of floor
 
 ## Run locally
 
