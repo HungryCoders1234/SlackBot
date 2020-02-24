@@ -1,9 +1,12 @@
-const SlackBot = require("slackbots");
+﻿const SlackBot = require("slackbots");
 const fetch = require("node-fetch");
 const cheerio = require("cheerio");
 const request = require("request");
 const Promise = require("promise");
+const dotenv = require("dotenv");
+const axios = require("axios");
 
+dotenv.config();
 getEnv("NODE_ENV");
 
 const ZOMATO_KEY = getEnv("ZOMATO_APIKEY");
@@ -23,7 +26,9 @@ const dayNames = [
 
 function getEnv(envName) {
   const v = process.env[envName];
-  if (v === undefined) { throw new Error(`Missing ENV variable "${envName}"`); }
+  if (v === undefined) {
+    throw new Error(`Missing ENV variable "${envName}"`);
+  }
   return v;
 }
 
@@ -50,59 +55,62 @@ bot.on("message", data => {
   if (data.type !== "message") {
     return;
   }
-
   //console.log(data);
-  handleMessage(data.text);
+
+  handleMessage(data);
 });
 
-//co kdyz nekdo napise command vicekrat?
-//Responds to Data
 var previousMessage = "";
-function handleMessage(message) {
-  message = message.toLowerCase();
-  if (message.includes == "hey lenny") {
-    bot.postMessageToUser("Miroslav Vlodarčík", "this should work", {
-      icon_emoji: ":robot_face:"
-    });
-  }
+function handleMessage(data) {
+ 
+
+  
 
   if (previousMessage != "help") {
-    if (message == "jack") {
-      getZomatoMenu("jack", 16525845, ":hamburger:");
-    } else if (message == "lev" || message == "ulva") {
-      getZomatoMenu("lev", 16513499, ":lion_face:");
-    } else if (message == "kolkovna") {
-      getZomatoMenu("kolkovna", 17978813, ":ticket:");
-    } else if (message == "jaros" || message == "ujarosu") {
-      getScrapedMenu("jaros", "http://www.ujarosu.cz/cz/denni-menu/");
-    } else if (message == "majak") {
-      getScrapedMenu(
-        "majak",
-        "http://www.restaurantmajak.cz/cs/clanky/denni-nabidka"
-      );
-    } else if (message == "freshntasty" || message == "freshntastykb") {
-      getScrapedMenu(
-        "freshntastykb",
-        "https://www.freshandtasty.cz/cz/firmy/moje-jidelna-kb/menu/obedy"
-      );
-    } else if (message == "basta") {
-      getScrapedMenu(
-        "basta",
-        "http://www.pustkoveckabasta.cz/pustkovecka-basta"
-      );
-    } else if (message == "sodexo") {
-      getScrapedMenu(
-        "sodexosiemens",
-        "http://siemens.portal.sodexo.cz/cs/jidelni-listek-na-cely-tyden"
-      );
-    } else if (message.includes("menuova")) {
-      getMenuOva();
-    } else if (message.includes("menuprg")) {
-      getMenuPrg();
+    
+    if (message != undefined) {
+      var message = data.text.toLowerCase();
+      if (message == "jack") {
+        getZomatoMenu("jack", 16525845, ":hamburger:");
+      } else if (message == "lev" || message == "ulva") {
+        getZomatoMenu("lev", 16513499, ":lion_face:");
+      } else if (message == "kolkovna") {
+        getZomatoMenu("kolkovna", 17978813, ":ticket:");
+      } else if (message == "jaros" || message == "ujarosu") {
+        getScrapedMenu("jaros", "http://www.ujarosu.cz/cz/denni-menu/");
+      } else if (message == "majak") {
+        getScrapedMenu(
+          "majak",
+          "http://www.restaurantmajak.cz/cs/clanky/denni-nabidka"
+        );
+      } else if (message == "freshntasty" || message == "freshntastykb") {
+        getScrapedMenu(
+          "freshntastykb",
+          "https://www.freshandtasty.cz/cz/firmy/moje-jidelna-kb/menu/obedy"
+        );
+      } else if (message == "basta") {
+        getScrapedMenu(
+          "basta",
+          "http://www.pustkoveckabasta.cz/pustkovecka-basta"
+        );
+      } else if (message == "sodexo") {
+        getScrapedMenu(
+          "sodexosiemens",
+          "http://siemens.portal.sodexo.cz/cs/jidelni-listek-na-cely-tyden"
+        );
+      } else if (message.includes("menuova")) {
+        getMenuOva();
+      } else if (message.includes("menuprg")) {
+        getMenuPrg();
+      } else if (message == "bistro") {
+        getBistro("bistro");
+      } else if (message == "kovork") {
+        getKovork("kovork");
+      }
     }
-  }
-  if (message == "help") {
-    getHelp(); //stop it. get some help.
+    if (message == "help") {
+      getHelp(); //stop it. get some help.
+    }
   }
 
   previousMessage = message;
@@ -112,7 +120,7 @@ function getHelp() {
   console.log("Printing help...");
   bot.postMessageToChannel(
     SLACK_CHANNEL,
-    "*Commands for Ostrava:*\n>Jack\n>Lev\n>Jaros\n>Basta\n>MenuOva\n" +
+    "*Commands for Ostrava:*\n>Jack\n>Lev\n>Jaros\n>Basta\n>Bistro\n>Kovork\n>MenuOva\n" +
       "*Commands for Prague:*\n>Majak\n>Kolkovna\n>Freshntasty\n>MenuPrg\n" +
       "_...commands aren't case sensitive_",
     { icon_emoji: ":ambulance:" }
@@ -173,14 +181,16 @@ function printFood(foodString, restaurantName) {
     "```" +
     foodString +
     "```";
-  bot.postMessageToChannel(SLACK_CHANNEL, slackString);
+  bot.postMessage(SLACK_CHANNEL, slackString);
 }
 
 function getMenuOva() {
+  getKovork("kovork");
   getScrapedMenu("jaros", "http://www.ujarosu.cz/cz/denni-menu/");
   getZomatoMenu("jack", 16525845, ":hamburger:");
   getZomatoMenu("lev", 16513499, ":lion_face:");
   getScrapedMenu("basta", "http://www.pustkoveckabasta.cz/pustkovecka-basta");
+  getBistro("bistro");
 }
 
 function getMenuPrg() {
@@ -242,10 +252,12 @@ function getScrapedMenu(restaurantName, url) {
       console.log("LOG: I got food!");
       printFood(foods, restaurantName);
     } else {
-      console.log("I aquired no foods :(");
+      console.log("I aquired no foods for " + restaurantName);
       bot.postMessageToChannel(
         SLACK_CHANNEL,
-        "Vypisuji obedy pouze pro Pondeli-Patek"
+        "Pro restauraci " +
+          getRestaurantFullName(restaurantName) +
+          " se mi nepodařilo získat menu."
       );
     }
   });
@@ -270,6 +282,10 @@ function getRestaurantFullName(restaurantName) {
       return "Pustkovecká Bašta";
     case "sodexosiemens":
       return "Sodexo Siemens";
+    case "bistro":
+      return "Bistro IN MSIC";
+    case "kovork":
+      return "Kavárna Kovork";
     default:
       return "[Restaurant Full Name]";
   }
@@ -341,7 +357,7 @@ function getScrapedFood($, restaurantName, currentDayNumber) {
       currentDayNumber
     );
   } else if (restaurantName == "jaros") {
-    scopeTarget = "table";
+    scopeTarget = "tbody";
     return scrapeFood(
       $,
       getTableSize($, scopeTarget),
@@ -440,11 +456,13 @@ function scrapeMajakOrJaros(
         }
       );
 
-      $(`tr:nth-child(${i}) td:nth-child(1)`).each(
-        (i,element) => {
-          detail.push($(element).html().trim());
-        }
-      )
+      $(`tr:nth-child(${i}) td:nth-child(1)`).each((i, element) => {
+        detail.push(
+          $(element)
+            .html()
+            .trim()
+        );
+      });
 
       $(selectorFactory(restaurantName, "price", i), scopeTarget).each(
         function() {
@@ -452,13 +470,11 @@ function scrapeMajakOrJaros(
         }
       );
     }
-
-    
   }
 
-  if(restaurantName == "jaros"){
+  if (restaurantName == "jaros") {
     detail[0] = "";
-    for(var i in justFoods){
+    for (var i in justFoods) {
       justFoods[i] = detail[i] + " " + justFoods[i];
     }
   }
@@ -510,6 +526,58 @@ function scrapeFreshNTasty($, currentDayNumber) {
   return [justFoods, justPrices];
 }
 
+function getKovork(restaurantName) {
+  axios.get('https://www.facebook.com/kavarnakovork/')
+  .then(response => {
+    var divArray = [];
+      const $ = cheerio.load(response.data, { decodeEntities: false });
+      $("._5pbx.userContent._3ds9._3576", "._4-u2._3xaf._3-95._4-u8 ._5va1._427x").each((i, element) => {
+        divArray.push($(element).html())
+      });
+
+      var $H = cheerio.load(divArray[0], { decodeEntities: false })
+      var foodArray = []
+      $H("p", "body").each((i, element) => {
+        foodArray.push($H(element).text())
+      });
+
+      var foodString = "";
+      for ( var i in foodArray){
+        if(i>0){foodString += "• ";}
+        
+        foodString += foodArray[i] + "\n";
+        
+      } 
+
+   printFood(foodString,restaurantName);
+
+})
+
+}
+
+function getBistro(restaurantName){
+  axios.get('https://www.facebook.com/pg/Bistro-IN-MSIC-481851575552749/posts/?ref=page_internal')
+  .then(response => {
+    const $ = cheerio.load(response.data, { decodeEntities: false });
+    var IMGURL = $(".scaledImageFitHeight.img", "._4-u2._4-u8:nth-child(1)").attr('src')
+    console.log("Bistro IMG url = " + IMGURL)
+
+    var slackString =
+    //"Menu pro restauraci " +
+    "*" +
+    getRestaurantFullName(restaurantName) +
+    "*: " +
+    "\n" +
+    IMGURL;
+//bot.postMessageToChannel(channelName, IMGURL);
+
+  bot.postMessage(SLACK_CHANNEL,slackString)
+  })
+  .catch(error => {
+    console.log(error);
+  });
+}
+
 function scrapBasta($) {
   var justFoods = [];
   var justPrices = [];
@@ -538,7 +606,7 @@ function scrapBasta($) {
   justPrices.unshift("");
 
   for (var i in justFoods) {
-    justFoods[i] = detail[i] + " " + justFoods[i]  ;
+    justFoods[i] = detail[i] + " " + justFoods[i];
   }
 
   return [justFoods, justPrices];
@@ -565,12 +633,12 @@ function scrapeSodexoSiemens($, currentDayNumber) {
     justPrices.push($(element).text());
   });
 
-  for(var i in justFoods){
-    if(detail[i] == ""){
-      detail[i] = "---g"
+  for (var i in justFoods) {
+    if (detail[i] == "") {
+      detail[i] = "---g";
     }
-      justFoods[i] = detail[i] + " " + justFoods[i] ;
-      //console.log(justFoods[i] + "........." + justPrices[i]);
+    justFoods[i] = detail[i] + " " + justFoods[i];
+    //console.log(justFoods[i] + "........." + justPrices[i]);
   }
 
   return [justFoods, justPrices];
@@ -605,4 +673,3 @@ function selectorFactory(restaurantName, type, i) {
       );
   }
 }
-
