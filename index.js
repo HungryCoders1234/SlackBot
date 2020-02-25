@@ -60,16 +60,17 @@ bot.on("message", data => {
   handleMessage(data);
 });
 
+var channelName = "";
+var message = "";
 var previousMessage = "";
 function handleMessage(data) {
  
+  if (data.text != undefined) {
+    message = data.text.toLowerCase();
+    channelName = data.channel;
+    console.log("Channel ID: " + channelName);
 
-  
-
-  if (previousMessage != "help") {
-    
-    if (message != undefined) {
-      var message = data.text.toLowerCase();
+    if (previousMessage != "help") {
       if (message == "jack") {
         getZomatoMenu("jack", 16525845, ":hamburger:");
       } else if (message == "lev" || message == "ulva") {
@@ -107,19 +108,20 @@ function handleMessage(data) {
       } else if (message == "kovork") {
         getKovork("kovork");
       }
+      if (message == "help") {
+          getHelp(); //stop it. get some help.
+        }
+      
     }
-    if (message == "help") {
-      getHelp(); //stop it. get some help.
-    }
-  }
 
-  previousMessage = message;
+    previousMessage = message;
+  }
 }
 
 function getHelp() {
   console.log("Printing help...");
-  bot.postMessageToChannel(
-    SLACK_CHANNEL,
+  bot.postMessage(
+    channelName,
     "*Commands for Ostrava:*\n>Jack\n>Lev\n>Jaros\n>Basta\n>Bistro\n>Kovork\n>MenuOva\n" +
       "*Commands for Prague:*\n>Majak\n>Kolkovna\n>Freshntasty\n>MenuPrg\n" +
       "_...commands aren't case sensitive_",
@@ -181,7 +183,7 @@ function printFood(foodString, restaurantName) {
     "```" +
     foodString +
     "```";
-  bot.postMessage(SLACK_CHANNEL, slackString);
+  bot.postMessage(channelName, slackString);
 }
 
 function getMenuOva() {
@@ -253,8 +255,8 @@ function getScrapedMenu(restaurantName, url) {
       printFood(foods, restaurantName);
     } else {
       console.log("I aquired no foods for " + restaurantName);
-      bot.postMessageToChannel(
-        SLACK_CHANNEL,
+      bot.postMessage(
+        channelName,
         "Pro restauraci " +
           getRestaurantFullName(restaurantName) +
           " se mi nepodařilo získat menu."
@@ -527,55 +529,63 @@ function scrapeFreshNTasty($, currentDayNumber) {
 }
 
 function getKovork(restaurantName) {
-  axios.get('https://www.facebook.com/kavarnakovork/')
-  .then(response => {
-    var divArray = [];
+  axios.get("https://www.facebook.com/kavarnakovork/").then(
+    response => {
+      var divArray = [];
       const $ = cheerio.load(response.data, { decodeEntities: false });
-      $("._5pbx.userContent._3ds9._3576", "._4-u2._3xaf._3-95._4-u8 ._5va1._427x").each((i, element) => {
-        divArray.push($(element).html())
+      $(
+        "._5pbx.userContent._3ds9._3576",
+        "._4-u2._3xaf._3-95._4-u8 ._5va1._427x"
+      ).each((i, element) => {
+        divArray.push($(element).html());
       });
 
-      var $H = cheerio.load(divArray[0], { decodeEntities: false })
-      var foodArray = []
+      var $H = cheerio.load(divArray[0], { decodeEntities: false });
+      var foodArray = [];
       $H("p", "body").each((i, element) => {
-        foodArray.push($H(element).text())
+        foodArray.push($H(element).text());
       });
 
       var foodString = "";
-      for ( var i in foodArray){
-        if(i>0){foodString += "• ";}
-        
+      for (var i in foodArray) {
+        if (i > 0) {
+          foodString += "• ";
+        }
+
         foodString += foodArray[i] + "\n";
-        
-      } 
+      }
 
-   printFood(foodString,restaurantName);
-
-})
-
+      printFood(foodString, restaurantName);
+    },
+    error => {
+      console.log(error);
+    }
+  );
 }
 
-function getBistro(restaurantName){
-  axios.get('https://www.facebook.com/pg/Bistro-IN-MSIC-481851575552749/posts/?ref=page_internal')
-  .then(response => {
-    const $ = cheerio.load(response.data, { decodeEntities: false });
-    var IMGURL = $(".scaledImageFitHeight.img", "._4-u2._4-u8:nth-child(1)").attr('src')
-    console.log("Bistro IMG url = " + IMGURL)
+function getBistro(restaurantName) {
+  axios
+    .get(
+      "https://www.facebook.com/pg/Bistro-IN-MSIC-481851575552749/posts/?ref=page_internal"
+    )
+    .then(response => {
+      const $ = cheerio.load(response.data, { decodeEntities: false });
+      var IMGURL = $(
+        ".scaledImageFitHeight.img",
+        "._4-u2._4-u8:nth-child(1)"
+      ).attr("src");
+      console.log("Bistro IMG url = " + IMGURL);
 
-    var slackString =
-    //"Menu pro restauraci " +
-    "*" +
-    getRestaurantFullName(restaurantName) +
-    "*: " +
-    "\n" +
-    IMGURL;
-//bot.postMessageToChannel(channelName, IMGURL);
+      var slackString =
+        //"Menu pro restauraci " +
+        "*" + getRestaurantFullName(restaurantName) + "*: " + "\n" + IMGURL;
+      //bot.postMessageToChannel(channelName, IMGURL);
 
-  bot.postMessage(SLACK_CHANNEL,slackString)
-  })
-  .catch(error => {
-    console.log(error);
-  });
+      bot.postMessage(SLACK_CHANNEL, slackString);
+    })
+    .catch(error => {
+      console.log(error);
+    });
 }
 
 function scrapBasta($) {
